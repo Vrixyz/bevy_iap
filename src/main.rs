@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
-use bevy_game::GamePlugin; // ToDo: Replace bevy_game with your new crate name.
+use bevy_ios_iap::GamePlugin;
 use std::io::Cursor;
 use winit::window::Icon;
 
@@ -17,7 +17,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Bevy game".to_string(), // ToDo
+                title: "Bevy iOS IAP".to_string(),
                 // Bind to canvas included in `index.html`
                 canvas: Some("#bevy".to_owned()),
                 // Tells wasm not to override default event handling, like F5 and Ctrl+R
@@ -43,11 +43,4 @@ fn set_window_icon(
     let icon_buf = Cursor::new(include_bytes!(
         "../build/macos/AppIcon.iconset/icon_256x256.png"
     ));
-    if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
-        let image = image.into_rgba8();
-        let (width, height) = image.dimensions();
-        let rgba = image.into_raw();
-        let icon = Icon::from_rgba(rgba, width, height).unwrap();
-        primary.set_window_icon(Some(icon));
-    };
 }

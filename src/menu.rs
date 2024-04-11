@@ -9,7 +9,10 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Menu), setup_menu)
-            .add_systems(Update, click_play_button.run_if(in_state(GameState::Menu)))
+            .add_systems(
+                Update,
+                click_iap_initialize_button.run_if(in_state(GameState::Menu)),
+            )
             .add_systems(OnExit(GameState::Menu), cleanup_menu);
     }
 }
@@ -66,7 +69,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                         ..Default::default()
                     },
                     button_colors,
-                    ChangeState(GameState::Playing),
+                    InitializeIAPButton,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
@@ -176,29 +179,36 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
 }
 
 #[derive(Component)]
-struct ChangeState(GameState);
+struct InitializeIAPButton;
+
+#[derive(Component)]
+struct PurchaseIAPButton(pub String);
 
 #[derive(Component)]
 struct OpenLink(&'static str);
 
-fn click_play_button(
+fn click_iap_initialize_button(
     mut next_state: ResMut<NextState<GameState>>,
     mut interaction_query: Query<
         (
             &Interaction,
             &mut BackgroundColor,
             &ButtonColors,
-            Option<&ChangeState>,
+            Option<&InitializeIAPButton>,
             Option<&OpenLink>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, button_colors, change_state, open_link) in &mut interaction_query {
+    for (interaction, mut color, button_colors, initialize_iap, open_link) in &mut interaction_query
+    {
         match *interaction {
             Interaction::Pressed => {
-                if let Some(state) = change_state {
-                    next_state.set(state.0.clone());
+                if let Some(state) = initialize_iap {
+                    dbg!("initializing iap...");
+                    ios_iap::fetch_products_for_identifiers(
+                        vec!["com.example.testiap".to_string()],
+                    );
                 } else if let Some(link) = open_link {
                     if let Err(error) = webbrowser::open(link.0) {
                         warn!("Failed to open link {error:?}");
