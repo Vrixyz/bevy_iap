@@ -1,16 +1,21 @@
-use objc_foundation::{INSArray, INSString, NSArray, NSString};
-use objc_id::{Id, ShareId};
+use objc_foundation::{INSArray, INSString, NSArray};
+use objc_id::ShareId;
+
+pub use objc_foundation::{NSObject, NSString};
+pub use objc_id::Id;
 
 extern "C" {
-    pub fn _fetch_products_for_identifiers(
-        identifiers: ShareId<NSArray<NSString>>,
-        callback: extern "C" fn(),
+    pub fn init_callbacks(
+        restore_finished: extern "C" fn(),
+        // TODO: handle restore fail
+        fetch_products_success: extern "C" fn(Id<NSObject>),
+        fetch_products_failed: extern "C" fn(),
+        purchase_success: extern "C" fn(Id<NSString>),
+        purchase_failed: extern "C" fn(Id<NSString>),
     );
-}
-
-#[no_mangle]
-extern "C" fn callback_c() {
-    dbg!("I know the ad was done for from Rust");
+    pub fn restore_purchases();
+    pub fn fetch_products(identifiers: ShareId<NSArray<NSString>>);
+    pub fn purchase(product: Id<NSObject>);
 }
 
 pub fn fetch_products_for_identifiers(identifiers: Vec<String>) {
@@ -18,5 +23,5 @@ pub fn fetch_products_for_identifiers(identifiers: Vec<String>) {
 
     let objs = vec![identifier];
     let objc_identifiers = NSArray::from_vec(objs).share();
-    unsafe { _fetch_products_for_identifiers(objc_identifiers, callback_c) }
+    unsafe { fetch_products(objc_identifiers) }
 }

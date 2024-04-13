@@ -37,3 +37,12 @@ Honestly, even though I listed it last, I like its simplicity.
 ## Current state
 
 Solution 4 (objc + custom objc bridge to storekit) is what I'm implementing, currently not too far but a very basic POC is promising.
+
+currently running as `RUST_LOG=info make run 2>&1 | grep -v 'WARN'` to limit WARN spam, there definitely is better ways, tell me about them!
+
+I expect the SKProduct bridge to be a bit problematic though, I guess we'll need:
+
+- Their identifiers
+- a new function to retrieve their pricing.
+
+The most naive option is to use an opaque pointer for SKProduct, and expose functions needed only: just to avoid the complexity of mapping the memory layout and avoid falling into the "map everything perfectly"rabbit hole 🤔.
