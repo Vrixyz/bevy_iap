@@ -38,6 +38,11 @@ Honestly, even though I listed it last, I like its simplicity.
 
 Solution 4 (objc + custom objc bridge to storekit) is what I'm implementing, currently not too far but a very basic POC is promising.
 
+Architecture summary:
+- ios_iap is a low level crate for engine agnostic in app purchases in iOS.
+- we'll want a bevy plugin (mmaaaybe a feature of ios_iap..?)
+- then a "user space implementation to serve as example.
+
 currently running as `RUST_LOG=info make run 2>&1 | grep -v 'WARN'` to limit WARN spam, there definitely is better ways, tell me about them!
 
 I expect the SKProduct bridge to be a bit problematic though, I guess we'll need:
@@ -46,3 +51,14 @@ I expect the SKProduct bridge to be a bit problematic though, I guess we'll need
 - a new function to retrieve their pricing.
 
 The most naive option is to use an opaque pointer for SKProduct, and expose functions needed only: just to avoid the complexity of mapping the memory layout and avoid falling into the "map everything perfectly"rabbit hole 🤔.
+
+A channel is created for each significant API route:
+- TODO: recover
+- fetching products
+- purchasing
+
+Not sure where to fit this, currently it's in "user space", but it should be better in library.
+Splitting the low level library in two just to support channels seems too far so I think I'll incorporate it in ios_iap.
+
+
+TODO: a system reading the receiver and sending an event to bevy app.
