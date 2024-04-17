@@ -3,12 +3,8 @@
 
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
-use bevy::winit::WinitWindows;
 use bevy::DefaultPlugins;
-use bevy_ios_iap::GamePlugin;
-use std::io::Cursor;
-use winit::window::Icon;
+use bevy_iap::GamePlugin;
 
 fn main() {
     App::new()
@@ -27,20 +23,5 @@ fn main() {
             ..default()
         }))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, set_window_icon)
         .run();
-}
-
-// Sets the icon on windows and X11
-fn set_window_icon(
-    windows: NonSend<WinitWindows>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
-) {
-    let primary_entity = primary_window.single();
-    let Some(primary) = windows.get_window(primary_entity) else {
-        return;
-    };
-    let icon_buf = Cursor::new(include_bytes!(
-        "../build/macos/AppIcon.iconset/icon_256x256.png"
-    ));
 }

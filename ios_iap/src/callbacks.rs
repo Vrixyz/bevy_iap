@@ -1,12 +1,55 @@
-use ios_iap::{INSString, Id, NSArray, NSObject, NSString};
+use crate::{INSString, Id, NSArray, NSObject, NSString};
 use std::sync::{
     mpsc::{channel, Receiver, Sender},
     Mutex,
 };
 
+type MutexAction<T, R> = fn(Option<&mut Mutex<Receiver<T>>>) -> R;
+
+/// Useful boilerplate to use with different getters taking [`MutexAction`] as parameter.
+///
+/// Usage:
+/// ```rs
+/// if let Some(result) = get_mut_restore_finished_receiver(try_read) {
+///     // TODO: use result
+/// }
+/// ```
+/// Alternatively, you can use the underlying mutex to adopt a custom reading:
+///
+/// Here is a blocking implementation:
+/// ```rs
+/// if let Some(result) = get_mut_restore_finished_receiver(|receiver| {
+///     receiver?.lock().map_or(None, |receiver| receiver.recv().ok())
+/// }) {
+///   // TODO: use result
+/// }
+/// ```
+pub fn try_read<T>(receiver: Option<&mut Mutex<Receiver<T>>>) -> Option<T> {
+    let Ok(lock) = receiver?.try_lock() else {
+        return None;
+    };
+    let Ok(result) = lock.try_recv() else {
+        return None;
+    };
+    Some(result)
+}
+
 static mut restore_finished_sender: Option<Mutex<Sender<()>>> = None;
 static mut restore_finished_receiver: Option<Mutex<Receiver<()>>> = None;
 
+/// Get the mutex to the receiver for [`crate::restore_purchases`],
+/// Given that we already called [`init_callbacks`].
+/// Usage (blocking read):
+/// ```rs
+/// let result = get_mut_restore_finished_receiver(try_read);
+/// if result.is_some() {
+///     let test = Some(result);
+/// }
+/// Alternatively, see [`try_read`]
+/// ```
+pub fn get_mut_restore_finished_receiver<T>(action: MutexAction<(), T>) -> T {
+    action(unsafe { restore_finished_receiver.as_mut() })
+}
 #[no_mangle]
 extern "C" fn restore_finished() {
     dbg!("restore_finished");
@@ -19,6 +62,22 @@ extern "C" fn restore_finished() {
 static mut fetch_products_sender: Option<Mutex<Sender<Result<NSArray<Id<NSObject>>, ()>>>> = None;
 static mut fetch_products_receiver: Option<Mutex<Receiver<Result<NSArray<Id<NSObject>>, ()>>>> =
     None;
+
+/// Get the mutex to the receiver for [`crate::fetch_products`] or [`crate::fetch_products_for_identifiers`],
+/// Given that we already called [`init_callbacks`].
+/// Usage:
+/// ```rs
+/// let result = get_mut_fetch_products_receiver(try_read);
+/// if result.is_some() {
+///     TODO: use the result
+/// }
+/// ```
+pub fn get_mut_fetch_products_receiver<T>(
+    action: MutexAction<Result<NSArray<Id<NSObject>>, ()>, T>,
+) -> T {
+    action(unsafe { fetch_products_receiver.as_mut() })
+}
+
 #[no_mangle]
 extern "C" fn fetch_products_success(products: NSArray<Id<NSObject>>) {
     dbg!("fetch_products_success");
@@ -39,6 +98,20 @@ extern "C" fn fetch_products_failed() {
 
 static mut purchase_sender: Option<Mutex<Sender<Result<String, String>>>> = None;
 static mut purchase_receiver: Option<Mutex<Receiver<Result<String, String>>>> = None;
+
+/// Get the mutex to the receiver for [`crate::purchase`],
+/// Given that we already called [`init_callbacks`].
+/// Usage:
+/// ```rs
+/// let result = get_mut_purchase_receiver(try_read);
+/// if result.is_some() {
+///     TODO: use the result
+/// }
+/// ```
+pub fn get_mut_purchase_receiver<T>(action: MutexAction<Result<String, String>, T>) -> T {
+    action(unsafe { purchase_receiver.as_mut() })
+}
+
 #[no_mangle]
 extern "C" fn purchase_success(product: NSString) {
     let s = product.as_str().to_string();
@@ -72,7 +145,7 @@ pub fn init_callbacks() {
         purchase_sender = Some(Mutex::new(tx));
         purchase_receiver = Some(Mutex::new(rx));
 
-        ios_iap::init_callbacks(
+        super::init_callbacks(
             restore_finished,
             fetch_products_success,
             fetch_products_failed,

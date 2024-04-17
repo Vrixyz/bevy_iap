@@ -1,0 +1,14 @@
+//
+//  env_example.xcconfig
+//  mobile
+//
+//  Created by Thierry Berger on 13/10/2023.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// Thanks https://kazaimazai.com/secret-env-vars-xcode-ci/
+
+PRODUCT_BUNDLE_IDENTIFIER=com.example.your-app
+

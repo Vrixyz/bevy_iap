@@ -206,9 +206,9 @@ fn click_iap_initialize_button(
             Interaction::Pressed => {
                 if let Some(state) = initialize_iap {
                     dbg!("initializing iap...");
-                    ios_iap::fetch_products_for_identifiers(
-                        vec!["com.example.testiap".to_string()],
-                    );
+                    bevy_ios_iap::fetch_products_for_identifiers(vec![
+                        "com.example.testiap".to_string(),
+                    ]);
                 } else if let Some(link) = open_link {
                     if let Err(error) = webbrowser::open(link.0) {
                         warn!("Failed to open link {error:?}");

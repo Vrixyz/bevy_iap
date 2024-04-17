@@ -1,3 +1,6 @@
+// TODO: probably better behind a feature
+pub mod callbacks;
+
 use objc_id::ShareId;
 
 pub use objc_foundation::{INSArray, INSString, NSArray, NSObject, NSString};

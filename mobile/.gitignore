@@ -1,3 +1,5 @@
 mobile.xcodeproj/xcuserdata/
 mobile.xcodeproj/project.xcworkspace/
 build/
+env_*.xcconfig*
+!env_example.xcconfig
