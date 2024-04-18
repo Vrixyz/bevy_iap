@@ -11,6 +11,8 @@ rust_callback_void _fetch_products_fail;
 rust_callback_string _purchase_success;
 rust_callback_string _purchase_fail;
 
+NSMutableDictionary<NSString*, SKProduct*>* products;
+
 @interface MyRequestDelegate : NSObject <SKProductsRequestDelegate>
 
 @end
@@ -25,7 +27,10 @@ rust_callback_string _purchase_fail;
 - (void)productsRequest:(nonnull SKProductsRequest *)request didReceiveResponse:(nonnull SKProductsResponse *)response { 
     NSLog(@"Request finished successfully.");
     NSLog(@"{%@}", response.products);
-    _fetch_products_success(CFBridgingRetain(response.products));
+    for (SKProduct* p in response.products) {
+        products[p.productIdentifier] = p;
+    }
+    _fetch_products_success();
 }
 
 @end
@@ -72,6 +77,7 @@ void init_callbacks(rust_callback_void restore_finished,
     _purchase_fail = purchase_failed;
     
     delegate = [MyRequestDelegate new];
+    products = [NSMutableDictionary new];
 }
 
 
@@ -86,23 +92,30 @@ void fetch_products(NSArray *productIdentifiers)
     [productsRequest start];
 }
 
-void purchase(SKProduct* product) {
+void purchase_raw(NSString* productIdentifier) {
+    SKProduct* product = products[productIdentifier];
     SKPayment* payment = [SKPayment paymentWithProduct: product];
     [[SKPaymentQueue defaultQueue] addPayment:payment];
 }
-NSArray* products;
 
-void* _Nullable get_product_from_array(void* _products, UInt32 index) {
-    products = (__bridge NSArray*)_products;
-    if (products.count <= index) {
-        return NULL;
+bool can_purchase_raw(NSString* productIdentifier) {
+    SKProduct* product = [products valueForKey:productIdentifier];
+    if (product == nil) {
+        return false;
     }
-    
-    return (__bridge void * _Nullable)(products[index]);
+    return true;
 }
 
-char* _Nullable get_product_identifier_raw(void* product) {
-    NSLog(@"%@", product);
-    return "hey";
-//    return [product.productIdentifier cStringUsingEncoding:NSStringEncodingConversionExternalRepresentation];
+NSString* get_price_localized_raw(NSString* productIdentifier) {
+    SKProduct* product = [products valueForKey:productIdentifier];
+    if (product == nil) {
+        return nil;
+    }
+    NSNumberFormatter *formatter = [NSNumberFormatter new];
+    [formatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
+    [formatter setNumberStyle:NSNumberFormatterCurrencyStyle];
+    [formatter setLocale:[product priceLocale]];
+
+    NSString *str = [formatter stringFromNumber:[product price]];
+    return str;
 }

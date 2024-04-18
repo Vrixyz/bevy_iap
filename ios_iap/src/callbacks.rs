@@ -63,8 +63,8 @@ extern "C" fn restore_finished() {
     }
 }
 
-static mut fetch_products_sender: Option<Mutex<Sender<Result<*mut c_void, ()>>>> = None;
-static mut fetch_products_receiver: Option<Mutex<Receiver<Result<*mut c_void, ()>>>> = None;
+static mut fetch_products_sender: Option<Mutex<Sender<Result<(), ()>>>> = None;
+static mut fetch_products_receiver: Option<Mutex<Receiver<Result<(), ()>>>> = None;
 
 /// Get the mutex to the receiver for [`crate::fetch_products`] or [`crate::fetch_products_for_identifiers`],
 /// Given that we already called [`init_callbacks`].
@@ -75,7 +75,7 @@ static mut fetch_products_receiver: Option<Mutex<Receiver<Result<*mut c_void, ()
 ///     TODO: use the result
 /// }
 /// ```
-pub fn get_mut_fetch_products_receiver<T>(action: MutexAction<Result<*mut c_void, ()>, T>) -> T {
+pub fn get_mut_fetch_products_receiver<T>(action: MutexAction<Result<(), ()>, T>) -> T {
     action(unsafe { fetch_products_receiver.as_mut() })
 }
 
@@ -85,7 +85,7 @@ extern "C" fn fetch_products_success(products: *mut c_void) {
     unsafe {
         let send_result = fetch_products_sender.as_ref().unwrap().lock().unwrap();
 
-        dbg!(send_result.send(Ok(dbg!(products))));
+        dbg!(send_result.send(Ok(())));
     }
     dbg!("sent_result");
 }

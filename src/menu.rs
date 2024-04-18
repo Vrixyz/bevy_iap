@@ -1,9 +1,6 @@
-use std::f32::consts::E;
-
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
-use bevy_ios_iap::Products;
 
 static iap_test: &str = "com.example.iap";
 
@@ -104,7 +101,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Fetch Products",
+                        "Buy",
                         TextStyle {
                             font_size: 40.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
@@ -220,7 +217,6 @@ struct OpenLink(&'static str);
 
 fn click_iap_initialize_button(
     mut next_state: ResMut<NextState<GameState>>,
-    mut products: Option<Res<Products>>,
     mut interaction_query: Query<
         (
             &Interaction,
@@ -242,11 +238,13 @@ fn click_iap_initialize_button(
                     dbg!("initializing iap...");
                     bevy_ios_iap::fetch_products_for_identifiers(vec![iap_test.to_string()]);
                 } else if let Some(purchase) = purchase {
-                    if let Some(products) = &products {
+                    // TODO: check if initialized
+                    if bevy_ios_iap::can_purchase(&purchase.0) {
                         dbg!("buying:", &purchase.0);
-                        products.purchase(&purchase.0);
+                        dbg!("price: ", bevy_ios_iap::get_price_localized(&purchase.0));
+                        bevy_ios_iap::purchase(&purchase.0);
                     } else {
-                        dbg!("cannot buy yet, fetch products first.");
+                        dbg!("cannot purchase this product currently.");
                     }
                 } else if let Some(link) = open_link {
                     if let Err(error) = webbrowser::open(link.0) {
