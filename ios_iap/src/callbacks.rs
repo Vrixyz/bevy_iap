@@ -1,7 +1,11 @@
-use crate::{INSString, Id, NSArray, NSObject, NSString};
-use std::sync::{
-    mpsc::{channel, Receiver, Sender},
-    Mutex,
+use crate::{INSString, Id, NSArray, NSObject, NSString, ShareId};
+use std::{
+    any::Any,
+    ffi::c_void,
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Mutex,
+    },
 };
 
 type MutexAction<T, R> = fn(Option<&mut Mutex<Receiver<T>>>) -> R;
@@ -59,9 +63,8 @@ extern "C" fn restore_finished() {
     }
 }
 
-static mut fetch_products_sender: Option<Mutex<Sender<Result<NSArray<Id<NSObject>>, ()>>>> = None;
-static mut fetch_products_receiver: Option<Mutex<Receiver<Result<NSArray<Id<NSObject>>, ()>>>> =
-    None;
+static mut fetch_products_sender: Option<Mutex<Sender<Result<*mut c_void, ()>>>> = None;
+static mut fetch_products_receiver: Option<Mutex<Receiver<Result<*mut c_void, ()>>>> = None;
 
 /// Get the mutex to the receiver for [`crate::fetch_products`] or [`crate::fetch_products_for_identifiers`],
 /// Given that we already called [`init_callbacks`].
@@ -72,19 +75,19 @@ static mut fetch_products_receiver: Option<Mutex<Receiver<Result<NSArray<Id<NSOb
 ///     TODO: use the result
 /// }
 /// ```
-pub fn get_mut_fetch_products_receiver<T>(
-    action: MutexAction<Result<NSArray<Id<NSObject>>, ()>, T>,
-) -> T {
+pub fn get_mut_fetch_products_receiver<T>(action: MutexAction<Result<*mut c_void, ()>, T>) -> T {
     action(unsafe { fetch_products_receiver.as_mut() })
 }
 
 #[no_mangle]
-extern "C" fn fetch_products_success(products: NSArray<Id<NSObject>>) {
+extern "C" fn fetch_products_success(products: *mut c_void) {
     dbg!("fetch_products_success");
     unsafe {
         let send_result = fetch_products_sender.as_ref().unwrap().lock().unwrap();
-        send_result.send(Ok(products));
+
+        dbg!(send_result.send(Ok(dbg!(products))));
     }
+    dbg!("sent_result");
 }
 
 #[no_mangle]

@@ -7,7 +7,7 @@ void main_rs(void);
 
 
 typedef void (*rust_callback_void)(void);
-typedef void (*rust_callback_skproducts)(NSArray<SKProduct *> *);
+typedef void (*rust_callback_skproducts)(void *);
 typedef void (*rust_callback_string)(NSString *);
 
 void init_callbacks(rust_callback_void restore_finished,
@@ -20,5 +20,9 @@ void init_callbacks(rust_callback_void restore_finished,
 void restore_purchases(void);
 void fetch_products(NSArray *identifiers);
 void purchase(SKProduct *product);
+
+void* _Nullable get_product_from_array(void* products, UInt32 index);
+
+char* _Nullable get_product_identifier_raw(void* product);
 
 #endif

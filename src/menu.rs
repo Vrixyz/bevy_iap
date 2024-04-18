@@ -1,6 +1,11 @@
+use std::f32::consts::E;
+
 use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
+use bevy_ios_iap::Products;
+
+static iap_test: &str = "com.example.iap";
 
 pub struct MenuPlugin;
 
@@ -17,7 +22,7 @@ impl Plugin for MenuPlugin {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 struct ButtonColors {
     normal: Color,
     hovered: Color,
@@ -68,12 +73,38 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                         background_color: button_colors.normal.into(),
                         ..Default::default()
                     },
-                    button_colors,
+                    button_colors.clone(),
                     InitializeIAPButton,
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
-                        "Play",
+                        "Fetch Products",
+                        TextStyle {
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                            ..default()
+                        },
+                    ));
+                });
+            children
+                .spawn((
+                    ButtonBundle {
+                        style: Style {
+                            width: Val::Px(140.0),
+                            height: Val::Px(50.0),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..Default::default()
+                        },
+                        background_color: button_colors.normal.into(),
+                        ..Default::default()
+                    },
+                    button_colors.clone(),
+                    PurchaseIAPButton(iap_test.to_string()),
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section(
+                        "Fetch Products",
                         TextStyle {
                             font_size: 40.0,
                             color: Color::rgb(0.9, 0.9, 0.9),
@@ -189,26 +220,34 @@ struct OpenLink(&'static str);
 
 fn click_iap_initialize_button(
     mut next_state: ResMut<NextState<GameState>>,
+    mut products: Option<Res<Products>>,
     mut interaction_query: Query<
         (
             &Interaction,
             &mut BackgroundColor,
             &ButtonColors,
             Option<&InitializeIAPButton>,
+            Option<&PurchaseIAPButton>,
             Option<&OpenLink>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
 ) {
-    for (interaction, mut color, button_colors, initialize_iap, open_link) in &mut interaction_query
+    for (interaction, mut color, button_colors, initialize_iap, purchase, open_link) in
+        &mut interaction_query
     {
         match *interaction {
             Interaction::Pressed => {
                 if let Some(state) = initialize_iap {
                     dbg!("initializing iap...");
-                    bevy_ios_iap::fetch_products_for_identifiers(vec![
-                        "com.example.testiap".to_string(),
-                    ]);
+                    bevy_ios_iap::fetch_products_for_identifiers(vec![iap_test.to_string()]);
+                } else if let Some(purchase) = purchase {
+                    if let Some(products) = &products {
+                        dbg!("buying:", &purchase.0);
+                        products.purchase(&purchase.0);
+                    } else {
+                        dbg!("cannot buy yet, fetch products first.");
+                    }
                 } else if let Some(link) = open_link {
                     if let Err(error) = webbrowser::open(link.0) {
                         warn!("Failed to open link {error:?}");

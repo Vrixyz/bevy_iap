@@ -25,7 +25,7 @@ rust_callback_string _purchase_fail;
 - (void)productsRequest:(nonnull SKProductsRequest *)request didReceiveResponse:(nonnull SKProductsResponse *)response { 
     NSLog(@"Request finished successfully.");
     NSLog(@"{%@}", response.products);
-    _fetch_products_success(response.products);
+    _fetch_products_success(CFBridgingRetain(response.products));
 }
 
 @end
@@ -86,7 +86,23 @@ void fetch_products(NSArray *productIdentifiers)
     [productsRequest start];
 }
 
-void buy_product(SKProduct* product) {
+void purchase(SKProduct* product) {
     SKPayment* payment = [SKPayment paymentWithProduct: product];
     [[SKPaymentQueue defaultQueue] addPayment:payment];
+}
+NSArray* products;
+
+void* _Nullable get_product_from_array(void* _products, UInt32 index) {
+    products = (__bridge NSArray*)_products;
+    if (products.count <= index) {
+        return NULL;
+    }
+    
+    return (__bridge void * _Nullable)(products[index]);
+}
+
+char* _Nullable get_product_identifier_raw(void* product) {
+    NSLog(@"%@", product);
+    return "hey";
+//    return [product.productIdentifier cStringUsingEncoding:NSStringEncodingConversionExternalRepresentation];
 }
