@@ -41,14 +41,20 @@ NSMutableDictionary<NSString*, SKProduct*>* products;
 
 @implementation StoreObserver
 
-- (void)paymentQueue:(nonnull SKPaymentQueue *)queue updatedTransactions:(nonnull NSArray<SKPaymentTransaction *> *)transactions { 
+
+- (void)paymentQueue:(nonnull SKPaymentQueue *)queue updatedTransactions:(nonnull NSArray<SKPaymentTransaction *> *)transactions {
     for (int i = 0; i < transactions.count; i++) {
+        NSLog(@"{%@}", transactions[i].transactionState);
         if (transactions[i].transactionState == SKPaymentTransactionStatePurchased || transactions[i].transactionState == SKPaymentTransactionStateRestored) {
+            // FIXME: This doesn't get called
             _purchase_success(transactions[i].payment.productIdentifier);
+            [[SKPaymentQueue defaultQueue] finishTransaction: transactions[i]];
         }
-        else {
+        else if (transactions[i].transactionState != SKPaymentTransactionStatePurchasing) {
             // TODO: maybe deferred needs special handling ? do nothing (as we expect something else to happen ? Eventually just send the exact state and let rust handle it.
+            // FIXME: this crashes
             _purchase_fail(transactions[i].payment.productIdentifier);
+            [[SKPaymentQueue defaultQueue] finishTransaction: transactions[i]];
         }
     }
 }
@@ -61,7 +67,8 @@ int main(void) {
 }
 
 SKProductsRequest* request = nil;
-id delegate = nil;
+id delegateFetchProducts = nil;
+id<SKPaymentTransactionObserver> delegatePayments = nil;
 
 void init_callbacks(rust_callback_void restore_finished,
                     rust_callback_skproducts fetch_products_success,
@@ -75,8 +82,9 @@ void init_callbacks(rust_callback_void restore_finished,
 
     _purchase_success = purchase_success;
     _purchase_fail = purchase_failed;
-    
-    delegate = [MyRequestDelegate new];
+    delegatePayments = [StoreObserver new];
+    [[SKPaymentQueue defaultQueue] addTransactionObserver: delegatePayments];
+    delegateFetchProducts = [MyRequestDelegate new];
     products = [NSMutableDictionary new];
 }
 
@@ -88,17 +96,22 @@ void fetch_products(NSArray *productIdentifiers)
     // Keep a strong reference to the request.
     // TODO: fail if there's already a request running
     request = productsRequest;
-    productsRequest.delegate = delegate;
+    productsRequest.delegate = delegateFetchProducts;
     [productsRequest start];
 }
 
 void purchase_raw(NSString* productIdentifier) {
     SKProduct* product = products[productIdentifier];
     SKPayment* payment = [SKPayment paymentWithProduct: product];
+    
     [[SKPaymentQueue defaultQueue] addPayment:payment];
 }
 
 bool can_purchase_raw(NSString* productIdentifier) {
+    // See https://developer.apple.com/documentation/storekit/in-app_purchase/original_api_for_in-app_purchase/offering_completing_and_restoring_in-app_purchases?language=objc
+    if (![SKPaymentQueue canMakePayments]) {
+        return false;
+    }
     SKProduct* product = [products valueForKey:productIdentifier];
     if (product == nil) {
         return false;

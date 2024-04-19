@@ -6,7 +6,7 @@ ifndef DEVICE_ID
 endif
 
 run: install
-	xcrun simctl launch --console $(DEVICE) com.thierryberger.bevy_ios_iap
+	xcrun simctl launch --console $(DEVICE) com.thierryberger.bevyiap
 
 boot-sim:
 	xcrun simctl boot $(DEVICE) || true

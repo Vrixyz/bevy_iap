@@ -19,8 +19,8 @@ version = "0.15"
 features = ["oboe-shared-stdcxx"]
 
 [package.metadata.android]
-package = "com.todo"
-apk_name = "BevyIosIap"                   # same as GAME_OSX_APP_NAME in release workflow
+package = "com.thierryberger.bevyiap"
+apk_name = "BevyGame"                     # same as GAME_OSX_APP_NAME in release workflow
 assets = "../assets"
 strip = "strip"
 resources = "../build/android/res"

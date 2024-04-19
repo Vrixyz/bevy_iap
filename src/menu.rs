@@ -1,8 +1,10 @@
 use crate::loading::TextureAssets;
 use crate::GameState;
+use bevy::ecs::system::{EntityCommand, EntityCommands};
 use bevy::prelude::*;
 
-static iap_test: &str = "com.example.iap";
+static iap_consumable: &str = "com.thierryberger.bevyiap.testconsumable";
+static iap_nonconsumable: &str = "com.thierryberger.bevyiap.testnonconsumable";
 
 pub struct MenuPlugin;
 
@@ -57,58 +59,11 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
         ))
         .with_children(|children| {
             let button_colors = ButtonColors::default();
-            children
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(140.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..Default::default()
-                        },
-                        background_color: button_colors.normal.into(),
-                        ..Default::default()
-                    },
-                    button_colors.clone(),
-                    InitializeIAPButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Fetch Products",
-                        TextStyle {
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
-                    ));
-                });
-            children
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(140.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..Default::default()
-                        },
-                        background_color: button_colors.normal.into(),
-                        ..Default::default()
-                    },
-                    button_colors.clone(),
-                    PurchaseIAPButton(iap_test.to_string()),
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Buy",
-                        TextStyle {
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
-                    ));
-                });
+            create_button(children, "Fetch products", &button_colors).insert(InitializeIAPButton);
+            create_button(children, "Buy Consumable", &button_colors)
+                .insert(PurchaseIAPButton(iap_consumable.to_string()));
+            create_button(children, "Buy Non Consumable", &button_colors)
+                .insert(PurchaseIAPButton(iap_nonconsumable.to_string()));
         });
     commands
         .spawn((
@@ -206,6 +161,38 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
         });
 }
 
+fn create_button<'a>(
+    children: &'a mut ChildBuilder<'_>,
+    title: &str,
+    button_colors: &ButtonColors,
+) -> EntityCommands<'a> {
+    let mut entity_commands = children.spawn((
+        ButtonBundle {
+            style: Style {
+                width: Val::Px(240.0),
+                height: Val::Px(100.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            background_color: button_colors.normal.into(),
+            ..Default::default()
+        },
+        button_colors.clone(),
+    ));
+    entity_commands.with_children(|parent| {
+        parent.spawn(TextBundle::from_section(
+            title,
+            TextStyle {
+                font_size: 40.0,
+                color: Color::rgb(0.9, 0.9, 0.9),
+                ..default()
+            },
+        ));
+    });
+    entity_commands
+}
+
 #[derive(Component)]
 struct InitializeIAPButton;
 
@@ -235,8 +222,10 @@ fn click_iap_initialize_button(
         match *interaction {
             Interaction::Pressed => {
                 if let Some(state) = initialize_iap {
-                    dbg!("initializing iap...");
-                    bevy_ios_iap::fetch_products_for_identifiers(vec![iap_test.to_string()]);
+                    let product_ids =
+                        vec![iap_consumable.to_string(), iap_nonconsumable.to_string()];
+                    dbg!("initializing iap...", &product_ids);
+                    bevy_ios_iap::fetch_products_for_identifiers(product_ids);
                 } else if let Some(purchase) = purchase {
                     // TODO: check if initialized
                     if bevy_ios_iap::can_purchase(&purchase.0) {
