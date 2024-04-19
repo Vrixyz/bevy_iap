@@ -6,8 +6,8 @@ This project attempts to integrate iOS in-app purchases to a bevy app.
 - https://developer.apple.com/documentation/storekit/in-app_purchase
 - https://developer.apple.com/documentation/storekit/purchaseaction
   - `PurchaseAction` or `purchase(options)` ? aka "swiftUI or UIKit" :thinking:
-
-## Analysis
+<details>
+  <summary>Analysis</summary>
 
 I'll be listing different approaches ranked from best to "less good" according to my opinion:
 
@@ -33,6 +33,8 @@ leverage objc to call directly storekit API ; doable, but requires good knowledg
 leverage objc but call a simpler custom objc API: the simplest choice, but requires a bit of manual work, as well as multiple languages used.
 
 Honestly, even though I listed it last, I like its simplicity.
+  
+</details>
 
 ## Current state
 
