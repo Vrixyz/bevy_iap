@@ -1,0 +1,1 @@
+These concerns the example app, should it be published or not in the app store.
