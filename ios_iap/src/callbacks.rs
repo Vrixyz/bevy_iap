@@ -116,7 +116,7 @@ pub fn get_mut_purchase_receiver<T>(action: MutexAction<Result<String, String>, 
 }
 
 #[no_mangle]
-extern "C" fn purchase_success(product: NSString) {
+extern "C" fn purchase_success(product: ShareId<NSString>) {
     let s = product.as_str().to_string();
     dbg!("purchase_success", &s);
     unsafe {
@@ -125,7 +125,7 @@ extern "C" fn purchase_success(product: NSString) {
     }
 }
 #[no_mangle]
-extern "C" fn purchase_failed(product: NSString) {
+extern "C" fn purchase_failed(product: ShareId<NSString>) {
     let s = product.as_str().to_string();
     dbg!("purchase_failed", &s);
     unsafe {

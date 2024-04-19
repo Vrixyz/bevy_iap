@@ -44,19 +44,20 @@ NSMutableDictionary<NSString*, SKProduct*>* products;
 
 - (void)paymentQueue:(nonnull SKPaymentQueue *)queue updatedTransactions:(nonnull NSArray<SKPaymentTransaction *> *)transactions {
     for (int i = 0; i < transactions.count; i++) {
-        NSLog(@"{%@}", transactions[i].transactionState);
         if (transactions[i].transactionState == SKPaymentTransactionStatePurchased || transactions[i].transactionState == SKPaymentTransactionStateRestored) {
-            // FIXME: This doesn't get called
             _purchase_success(transactions[i].payment.productIdentifier);
             [[SKPaymentQueue defaultQueue] finishTransaction: transactions[i]];
         }
         else if (transactions[i].transactionState != SKPaymentTransactionStatePurchasing) {
-            // TODO: maybe deferred needs special handling ? do nothing (as we expect something else to happen ? Eventually just send the exact state and let rust handle it.
-            // FIXME: this crashes
+            // TODO: maybe deferred needs special handling ? do nothing (as we expect something else to happen ? we shouldn't call finish?
+            // maybe just send the exact state and let rust handle it.
             _purchase_fail(transactions[i].payment.productIdentifier);
             [[SKPaymentQueue defaultQueue] finishTransaction: transactions[i]];
         }
     }
+}
+
+- (void)paymentQueue:(SKPaymentQueue *)queue removedTransactions:(NSArray<SKPaymentTransaction *> *)transactions {
 }
 
 @end
@@ -99,11 +100,11 @@ void fetch_products(NSArray *productIdentifiers)
     productsRequest.delegate = delegateFetchProducts;
     [productsRequest start];
 }
+SKPayment* payment = nil;
 
 void purchase_raw(NSString* productIdentifier) {
     SKProduct* product = products[productIdentifier];
-    SKPayment* payment = [SKPayment paymentWithProduct: product];
-    
+    payment = [SKPayment paymentWithProduct: product];
     [[SKPaymentQueue defaultQueue] addPayment:payment];
 }
 

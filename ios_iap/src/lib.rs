@@ -15,8 +15,8 @@ extern "C" {
         // TODO: handle restore fail
         fetch_products_success: extern "C" fn(*mut c_void),
         fetch_products_failed: extern "C" fn(),
-        purchase_success: extern "C" fn(NSString),
-        purchase_failed: extern "C" fn(NSString),
+        purchase_success: extern "C" fn(ShareId<NSString>),
+        purchase_failed: extern "C" fn(ShareId<NSString>),
     );
     pub fn restore_purchases();
     pub fn fetch_products(identifiers: ShareId<NSArray<NSString>>);
