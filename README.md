@@ -38,7 +38,7 @@ Honestly, even though I listed it last, I like its simplicity.
 
 ## Current state
 
-Solution 4 (objc + custom objc bridge to storekit) is what I'm implementing, currently not too far but a very basic POC is promising.
+Solution 4 (objc + custom objc bridge to storekit) is what I'm implementing, still a lot to do but a very basic POC is promising.
 
 Architecture summary:
 
